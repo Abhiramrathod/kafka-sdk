@@ -20,7 +20,8 @@ jobs:
 
       - name: Set version in POM
         run: |
-          mvn versions:set -DnewVersion=${{ github.event.inputs.version }} -DgenerateBackupPoms=false
+          chmod +x mvnw
+          ./mvnw versions:set -DnewVersion=${{ github.event.inputs.version }} -DgenerateBackupPoms=false
 
       - name: Commit and tag
         run: |

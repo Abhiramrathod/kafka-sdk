@@ -24,4 +24,4 @@ jobs:
           distribution: 'temurin'
 
       - name: Build
-        run: ./mvnw clean verify -DskipTests
+        run: chmod +x mvnw && ./mvnw clean verify -DskipTests
