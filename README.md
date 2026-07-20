@@ -2,6 +2,9 @@
 
 A lightweight Spring Boot SDK that simplifies publishing messages to Apache Kafka. It wraps Spring Cloud Stream's `StreamBridge` behind a clean, interface-driven API — so you define topics as Java interfaces and publish messages with a single method call.
 
+[![Build & Release](https://github.com/Abhiramrathod/kafka-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Abhiramrathod/kafka-sdk/actions/workflows/ci.yml)
+[![](https://jitpack.io/v/Abhiramrathod/kafka-sdk.svg)](https://jitpack.io/#Abhiramrathod/kafka-sdk)
+
 ## Why Kafka SDK?
 
 Publishing to Kafka with Spring Cloud Stream requires wiring `StreamBridge`, managing binding names, setting headers, and handling content types manually. This SDK removes that boilerplate:
@@ -28,25 +31,46 @@ Publishing to Kafka with Spring Cloud Stream requires wiring `StreamBridge`, man
 - Spring Cloud 2025.1+
 - Apache Kafka
 
-## Getting Started
+## Installation
 
-### 1. Add the dependency
+### Maven
 
-Include the starter in your `pom.xml`:
+Add the JitPack repository and the dependency to your `pom.xml`:
 
 ```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
 <dependency>
-    <groupId>org.abhi</groupId>
+    <groupId>com.github.Abdhiramrathod</groupId>
     <artifactId>kafka-sdk-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.42</version>
 </dependency>
 ```
 
-This pulls in everything you need — the SDK, auto-configuration, and the Kafka binder.
+### Gradle
 
-### 2. Define a topic
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
 
-Create an interface that extends `ITopicPublish`. Each interface represents a Kafka topic binding:
+dependencies {
+    implementation 'com.github.Abdhiramrathod:kafka-sdk-starter:1.0.42'
+}
+```
+
+Check [jitpack.io/#Abhiramrathod/kafka-sdk](https://jitpack.io/#Abhiramrathod/kafka-sdk) for available versions.
+
+## Quick Start
+
+### 1. Define a topic
+
+Create an interface that extends `ITopicPublish`:
 
 ```java
 import org.abhi.kafkasdk.core.ITopicPublish;
@@ -65,9 +89,7 @@ public interface OrderCreatedTopic extends ITopicPublish {
 }
 ```
 
-The `getBinding()` value must match a Spring Cloud Stream binding name defined in your configuration (e.g., `spring.cloud.stream.bindings.orderCreated-out-0.destination`).
-
-### 3. Publish messages
+### 2. Publish messages
 
 Inject `IPublishService` and publish using the topic interface:
 
@@ -85,17 +107,12 @@ public class OrderService {
     }
 
     public void createOrder(Order order) {
-        // Synchronous publish
         publishService.publish(OrderCreatedTopic.class, order);
     }
 }
 ```
 
-That's it. The SDK resolves the binding, sets headers, and sends the message through `StreamBridge`.
-
-### 4. Configure bindings
-
-In your `application.yml`:
+### 3. Configure bindings
 
 ```yaml
 spring:
@@ -176,54 +193,6 @@ public interface AuditTopic extends ITopicPublish {
 }
 ```
 
-## Adding the Dependency
-
-### Maven
-
-Add the JitPack repository and the dependency to your `pom.xml`:
-
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
-<dependency>
-    <groupId>com.github.abhiram-gh</groupId>
-    <artifactId>kafka-sdk-starter</artifactId>
-    <version>TAG</version>
-</dependency>
-```
-
-Replace `TAG` with a git tag (e.g. `1.0.0`) or use `master-SNAPSHOT` for the latest commit.
-
-### Gradle
-
-```groovy
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-
-dependencies {
-    implementation 'com.github.abhiram-gh:kafka-sdk-starter:TAG'
-}
-```
-
-### How It Works
-
-No account, no token, no password. JitPack builds directly from this public GitHub repo on-demand. The first request for a version triggers a build; subsequent requests are cached.
-
-To create a version, tag a commit:
-
-```bash
-git tag 1.0.0
-git push origin 1.0.0
-```
-
-Then consumers use `1.0.0` as the version. The latest commit on `master` is available as `master-SNAPSHOT`.
-
 ## Tech Stack
 
 | Component | Version |
@@ -232,4 +201,3 @@ Then consumers use `1.0.0` as the version. The latest commit on `master` is avai
 | Spring Boot | 4.1.0 |
 | Spring Cloud | 2025.1.2 |
 | Apache Kafka | via Spring Cloud Stream Binder |
-
