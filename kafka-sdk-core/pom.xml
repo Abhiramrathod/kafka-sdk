@@ -11,6 +11,8 @@
 
     <artifactId>kafka-sdk-core</artifactId>
     <name>kafka-sdk-core</name>
+    <description>Core interfaces and service contracts for the Kafka SDK.</description>
+    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-core</url>
 
     <dependencies>
         <dependency>

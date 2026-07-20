@@ -38,7 +38,7 @@ Include the starter in your `pom.xml`:
 <dependency>
     <groupId>org.abhi</groupId>
     <artifactId>kafka-sdk-starter</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
 </dependency>
 ```
 
@@ -179,10 +179,94 @@ public interface AuditTopic extends ITopicPublish {
 ## Building from Source
 
 ```bash
-git clone https://github.com/<your-username>/kafka-sdk.git
+git clone https://github.com/abhiram-gh/kafka-sdk.git
 cd kafka-sdk
 ./mvnw clean install
 ```
+
+## Publishing to Maven Central
+
+This project is configured to publish to Maven Central via Sonatype OSSRH.
+
+### Prerequisites
+
+1. **Sonatype OSSRH Account** — Register at [issues.sonatype.org](https://issues.sonatype.org) and claim the `org.abhi` groupId (requires DNS verification).
+
+2. **GPG Key** — Generate and publish a GPG key:
+
+   ```bash
+   # Generate key
+   gpg --full-generate-key
+
+   # List keys and copy the KEY_ID
+   gpg --list-keys --keyid-format long
+
+   # Send to keyserver
+   gpg --keyserver keyserver.ubuntu.com --send-keys KEY_ID
+   ```
+
+3. **Maven settings.xml** — Copy `docs/settings-template.xml` to `~/.m2/settings.xml` and fill in:
+
+   ```xml
+   <server>
+       <id>ossrh</id>
+       <username>YOUR_SONATYPE_USERNAME</username>
+       <password>YOUR_SONATYPE_PASSWORD</password>
+   </server>
+   ```
+
+### Release Steps
+
+1. **Remove `-SNAPSHOT` from the version** in the parent `pom.xml`:
+
+   ```xml
+   <version>1.0.0</version>
+   ```
+
+2. **Build, sign, and deploy to staging**:
+
+   ```bash
+   ./mvnw clean deploy -Prelease
+   ```
+
+3. **Release from staging**:
+
+   - Log in to [oss.sonatype.org](https://oss.sonatype.org)
+   - Go to **Staging Repositories**
+   - Select your repository and click **Close**
+   - After validation passes, click **Release**
+
+   Or use the nexus-staging plugin:
+
+   ```bash
+   ./mvnw nexus-staging:release -Prelease
+   ```
+
+4. **Bump to the next SNAPSHOT version** for continued development:
+
+   ```xml
+   <version>1.0.1-SNAPSHOT</version>
+   ```
+
+### What the Release Profile Activates
+
+| Plugin | Purpose |
+|--------|---------|
+| `maven-source-plugin` | Generates `-sources.jar` |
+| `maven-javadoc-plugin` | Generates `-javadoc.jar` |
+| `maven-gpg-plugin` | Signs all artifacts with GPG |
+
+These are only active when you pass `-Prelease`.
+
+### Modules Published
+
+| Artifact | Description |
+|----------|-------------|
+| `kafka-sdk-core` | Core interfaces |
+| `kafka-sdk-common` | Shared utilities |
+| `kafka-sdk-service` | PublishService implementation |
+| `kafka-sdk-autoconfigure` | Spring Boot auto-configuration |
+| `kafka-sdk-starter` | Starter dependency |
 
 ## Tech Stack
 

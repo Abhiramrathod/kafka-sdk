@@ -11,6 +11,8 @@
 
     <artifactId>kafka-sdk-autoconfigure</artifactId>
     <name>kafka-sdk-autoconfigure</name>
+    <description>Spring Boot auto-configuration for the Kafka SDK, registers PublishService as a bean automatically.</description>
+    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-autoconfigure</url>
 
     <dependencies>
         <dependency>

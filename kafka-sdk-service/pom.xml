@@ -11,6 +11,8 @@
 
     <artifactId>kafka-sdk-service</artifactId>
     <name>kafka-sdk-service</name>
+    <description>PublishService implementation using Spring Cloud Stream's StreamBridge for Kafka message publishing.</description>
+    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-service</url>
 
     <dependencies>
         <dependency>

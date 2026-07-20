@@ -11,6 +11,8 @@
 
     <artifactId>kafka-sdk-starter</artifactId>
     <name>kafka-sdk-starter</name>
+    <description>Spring Boot starter that bundles the Kafka SDK auto-configuration and Kafka binder for zero-config setup.</description>
+    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-starter</url>
 
     <dependencies>
         <dependency>

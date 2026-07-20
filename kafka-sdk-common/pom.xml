@@ -11,6 +11,8 @@
 
     <artifactId>kafka-sdk-common</artifactId>
     <name>kafka-sdk-common</name>
+    <description>Shared utilities for message conversion, header handling, and channel resolution in the Kafka SDK.</description>
+    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-common</url>
 
     <dependencies>
         <dependency>
