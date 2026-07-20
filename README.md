@@ -193,6 +193,3 @@ cd kafka-sdk
 | Spring Cloud | 2025.1.2 |
 | Apache Kafka | via Spring Cloud Stream Binder |
 
-## License
-
-Specify your license here.
