@@ -176,108 +176,53 @@ public interface AuditTopic extends ITopicPublish {
 }
 ```
 
-## Building from Source
+## Adding the Dependency
 
-```bash
-git clone https://github.com/abhiram-gh/kafka-sdk.git
-cd kafka-sdk
-./mvnw clean install
-```
+### Maven
 
-## Publishing Artifacts to GitHub Packages
-
-This project publishes artifacts to **GitHub Packages** (Maven registry).
-
-### Prerequisites
-
-1. **GitHub Personal Access Token (PAT)** — Create one at [github.com/settings/tokens](https://github.com/settings/tokens) with `write:packages` scope.
-
-2. **Maven settings.xml** — Copy `docs/settings-template.xml` to `~/.m2/settings.xml` and fill in:
-
-   ```xml
-   <server>
-       <id>github</id>
-       <username>YOUR_GITHUB_USERNAME</username>
-       <password>YOUR_GITHUB_PERSONAL_ACCESS_TOKEN</password>
-   </server>
-   ```
-
-### Deploy
-
-```bash
-./mvnw clean deploy
-```
-
-All modules (`kafka-sdk-core`, `kafka-sdk-common`, `kafka-sdk-service`, `kafka-sdk-autoconfigure`, `kafka-sdk-starter`) will be published to:
-
-```
-https://maven.pkg.github.com/abhiram-gh/kafka-sdk
-```
-
-### Consuming from GitHub Packages
-
-Add the GitHub Packages repository to your project's `pom.xml` and your `~/.m2/settings.xml` credentials.
-
-**1. Add repository to `pom.xml`:**
+Add the JitPack repository and the dependency to your `pom.xml`:
 
 ```xml
 <repositories>
     <repository>
-        <id>github</id>
-        <name>GitHub Packages</name>
-        <url>https://maven.pkg.github.com/abhiram-gh/kafka-sdk</url>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
     </repository>
 </repositories>
-```
 
-**2. Add credentials to `~/.m2/settings.xml`:**
-
-```xml
-<servers>
-    <server>
-        <id>github</id>
-        <username>YOUR_GITHUB_USERNAME</username>
-        <password>YOUR_GITHUB_PERSONAL_ACCESS_TOKEN</password>
-    </server>
-</servers>
-```
-
-**3. Add the dependency:**
-
-```xml
 <dependency>
-    <groupId>org.abhi</groupId>
+    <groupId>com.github.abhiram-gh</groupId>
     <artifactId>kafka-sdk-starter</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>TAG</version>
 </dependency>
 ```
 
-### Consuming via Gradle
+Replace `TAG` with a git tag (e.g. `1.0.0`) or use `master-SNAPSHOT` for the latest commit.
 
-**`build.gradle`:**
+### Gradle
 
 ```groovy
 repositories {
-    maven {
-        url = uri("https://maven.pkg.github.com/abhiram-gh/kafka-sdk")
-        credentials {
-            username = project.findProperty("gpr.user") ?: System.getenv("GITHUB_ACTOR")
-            password = project.findProperty("gpr.key") ?: System.getenv("GITHUB_TOKEN")
-        }
-    }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
-    implementation "org.abhi:kafka-sdk-starter:0.0.1-SNAPSHOT"
+    implementation 'com.github.abhiram-gh:kafka-sdk-starter:TAG'
 }
 ```
 
-Set credentials via `~/.gradle/gradle.properties`:
+### How It Works
 
-```properties
-gpr.user=YOUR_GITHUB_USERNAME
-gpr.key=YOUR_GITHUB_PERSONAL_ACCESS_TOKEN
+No account, no token, no password. JitPack builds directly from this public GitHub repo on-demand. The first request for a version triggers a build; subsequent requests are cached.
+
+To create a version, tag a commit:
+
+```bash
+git tag 1.0.0
+git push origin 1.0.0
 ```
+
+Then consumers use `1.0.0` as the version. The latest commit on `master` is available as `master-SNAPSHOT`.
 
 ## Tech Stack
 
