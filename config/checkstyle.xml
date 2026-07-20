@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+        "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<module name="Checker">
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!-- File length -->
+    <module name="FileLength">
+        <property name="max" value="500"/>
+    </module>
+
+    <module name="TreeWalker">
+        <!-- Naming Conventions -->
+        <module name="TypeName"/>
+        <module name="MemberName"/>
+        <module name="MethodName"/>
+        <module name="ParameterName"/>
+        <module name="LocalVariableName"/>
+        <module name="PackageName"/>
+        <module name="ConstantName"/>
+
+        <!-- SOLID - Single Responsibility -->
+        <module name="ClassDataAbstractionCoupling">
+            <property name="max" value="7"/>
+            <property name="excludedClasses" value="Test"/>
+        </module>
+        <module name="ClassFanOutComplexity">
+            <property name="max" value="10"/>
+        </module>
+
+        <!-- SOLID - Open/Closed Principle -->
+        <module name="IllegalCatch"/>
+
+        <!-- SOLID - Interface Segregation -->
+        <module name="InterfaceIsPermitted"/>
+
+        <!-- Design -->
+        <module name="FinalClass"/>
+        <module name="HideUtilityClassConstructor">
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="ImmutableEnumCheck"/>
+        <module name="UtilityClass"/>
+        <module name="VisibilityModifier">
+            <property name="packageAllowed" value="true"/>
+            <property name="protectedAllowed" value="true"/>
+        </module>
+
+        <!-- Coding -->
+        <module name="CyclomaticComplexity">
+            <property name="max" value="10"/>
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="NPathComplexity">
+            <property name="max" value="200"/>
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="MethodLength">
+            <property name="max" value="60"/>
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="ParameterNumber">
+            <property name="max" value="5"/>
+            <property name="severity" value="warning"/>
+        </module>
+
+        <!-- Blocks -->
+        <module name="NeedBraces"/>
+        <module name="LeftCurly"/>
+        <module name="RightCurly"/>
+        <module name="EmptyBlock">
+            <property name="option" value="TEXT"/>
+        </module>
+
+        <!-- Imports -->
+        <module name="AvoidStarImport"/>
+        <module name="UnusedImports"/>
+        <module name="RedundantImport"/>
+
+        <!-- Modifiers -->
+        <module name="ModifierOrder"/>
+        <module name="RedundantModifier"/>
+
+        <!-- Coding Issues -->
+        <module name="EmptyStatement"/>
+        <module name="EqualsHashCode"/>
+        <module name="SimplifyBooleanExpression"/>
+        <module name="SimplifyBooleanReturn"/>
+        <module name="OneStatementPerLine"/>
+        <module name="MultipleVariableDeclarations"/>
+        <module name="MissingSwitchDefault"/>
+        <module name="NoFinalizer"/>
+        <module name="FallThrough"/>
+    </module>
+</module>

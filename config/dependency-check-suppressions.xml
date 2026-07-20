@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+        "-//OWASP//DTD Dependency-Check Suppressions 1.2//EN"
+        "https://jeremylong.github.io/DependencyCheck/dependency-suppressions.1.2.dtd">
+
+<suppressions>
+    <!-- Suppress false positives for Spring framework snapshots -->
+    <suppress>
+        <notes>Spring Boot/Cloud snapshot builds are expected</notes>
+        <gav groupId="org.springframework.boot" artifactId="spring-boot-dependencies"/>
+        <gav groupId="org.springframework.cloud" artifactId="spring-cloud-dependencies"/>
+    </suppress>
+
+    <!-- Suppress test-scope dependencies -->
+    <suppress>
+        <notes>Test dependencies do not affect production</notes>
+        <gav groupId="org.springframework.boot" artifactId="spring-boot-starter-test"/>
+        <gav groupId="org.junit.jupiter" artifactId="junit-jupiter"/>
+    </suppress>
+</suppressions>

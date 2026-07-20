@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Exclude test files -->
+    <Match>
+        <Class name="~.*Test"/>
+        <Bug pattern="BC_UNCONFIRMED_CAST"/>
+    </Match>
+
+    <!-- Exclude generated code -->
+    <Match>
+        <Package name="~.*generated.*"/>
+    </Match>
+
+    <!-- Relax NP炳Nullable warnings on Spring beans -->
+    <Match>
+        <Bug pattern="NP炳Nullable_field"/>
+        <Class name="~.*Service"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="NP炳Nullable_field"/>
+        <Class name="~.*Configuration"/>
+    </Match>
+</FindBugsFilter>
