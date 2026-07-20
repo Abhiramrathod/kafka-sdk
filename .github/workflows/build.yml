@@ -36,8 +36,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: compiled-classes
-          path: |
-            */target/classes
+          path: "*/target/classes"
           retention-days: 1
 
   unit-tests:
@@ -63,8 +62,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: test-reports
-          path: |
-            */target/surefire-reports/
+          path: "*/target/surefire-reports/"
           retention-days: 7
 
   dependency-check:
@@ -116,7 +114,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: checkstyle-report
-          path: */target/checkstyle-result.xml
+          path: "*/target/checkstyle-result.xml"
           retention-days: 7
 
   bug-detection:
@@ -142,7 +140,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: spotbugs-report
-          path: */target/spotbugsXml.xml
+          path: "*/target/spotbugsXml.xml"
           retention-days: 7
 
   static-analysis:
@@ -168,7 +166,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: pmd-report
-          path: */target/pmd.xml
+          path: "*/target/pmd.xml"
           retention-days: 7
 
   quality-gate:
