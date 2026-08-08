@@ -57,6 +57,12 @@
         <spotbugs.version>4.8.6.6</spotbugs.version>
         <pmd.version>3.25.0</pmd.version>
         <jayway.version>2.1.0</jayway.version>
+
+        <!-- Central publishing (OSSRH / Maven Central) -->
+        <maven.deploy.skip>false</maven.deploy.skip>
+        <!-- The CI workflow signs artifacts with explicit GPG, so the maven-gpg-plugin
+             (if present) is skipped to avoid plugin-invoked signing failures. -->
+        <gpg.skip>true</gpg.skip>
     </properties>
 
     <dependencyManagement>
@@ -103,7 +109,46 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- Distribution configured for Sonatype OSSRH (Maven Central). To publish,
+         create Sonatype OSSRH credentials and configure CI to supply them as
+         secrets (OSSRH_USERNAME and OSSRH_PASSWORD). Snapshots will be published
+         to the snapshots repository. -->
+    <distributionManagement>
+        <repository>
+            <id>ossrh</id>
+            <name>OSSRH Staging</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <name>OSSRH Snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.12.0</version>
+                    <configuration>
+                        <source>17</source>
+                        <show>public</show>
+                        <detectJavaApiLink>true</detectJavaApiLink>
+                        <doclint>none</doclint>
+                        <failOnError>false</failOnError>
+                        <quiet>true</quiet>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>versions-maven-plugin</artifactId>
+                    <version>2.16.2</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -112,6 +157,63 @@
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
+                </configuration>
+            </plugin>
+
+            <!-- Generate sources JAR (required by Maven Central) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Generate javadoc JAR (required by Maven Central) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Nexus staging plugin to work with Sonatype OSSRH -->
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.13</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <!-- Nexus staging plugin expects the Nexus base URL (no path) -->
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+
+            <!-- Central publishing plugin: uploads bundle to central.sonatype.com -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.11.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <!-- server id matched in settings.xml / Actions setup-java -->
+                    <publishingServerId>ossrh</publishingServerId>
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>published</waitUntil>
                 </configuration>
             </plugin>
         </plugins>

@@ -14,6 +14,11 @@
     <description>Spring Boot starter that bundles the Kafka SDK auto-configuration and Kafka binder for zero-config setup.</description>
     <url>https://github.com/Abhiramrathod/kafka-sdk/tree/master/kafka-sdk-starter</url>
 
+    <properties>
+        <!-- Starter has no Java sources; skip javadoc JAR generation. -->
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.abhi</groupId>

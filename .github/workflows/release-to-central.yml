@@ -1,0 +1,309 @@
+name: Release to Maven Central
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      - name: Set release version from tag
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          echo "Releasing version from tag $GITHUB_REF_NAME: $TAG_VERSION"
+          if [ -z "$TAG_VERSION" ]; then
+            echo "Could not determine version from tag: $GITHUB_REF_NAME"; exit 1
+          fi
+          chmod +x mvnw
+          ./mvnw versions:set -DnewVersion="$TAG_VERSION" -DgenerateBackupPoms=false -B
+          echo "release_version=$TAG_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Test
+        run: chmod +x mvnw && ./mvnw clean verify -B
+
+      - name: Import GPG private key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          set -e
+          mkdir -p ~/.gnupg
+          chmod 700 ~/.gnupg
+          echo "Importing GPG private key (masked)..."
+          if [ -z "$GPG_PRIVATE_KEY" ]; then
+            echo "GPG_PRIVATE_KEY secret is empty or missing"; exit 1
+          fi
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import || true
+          gpg --list-secret-keys --keyid-format LONG || true
+
+      - name: Export GPG passphrase to environment for Maven
+        run: |
+          echo "GPG_PASSPHRASE=${{ secrets.GPG_PASSPHRASE }}" >> $GITHUB_ENV
+
+      - name: Enable GPG loopback pinentry (required for non-interactive signing)
+        run: |
+          mkdir -p ~/.gnupg
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          gpgconf --kill gpg-agent || true
+          sleep 1
+
+      - name: Cache Maven local repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: mvn-repo-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            mvn-repo-${{ runner.os }}-
+
+      - name: Write Maven settings with OSSRH credentials
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.m2
+          rm -f ~/.m2/settings.xml
+          echo "<settings xmlns=\"http://maven.apache.org/SETTINGS/1.0.0\"" > ~/.m2/settings.xml
+          echo "  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" >> ~/.m2/settings.xml
+          echo "  xsi:schemaLocation=\"http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd\">" >> ~/.m2/settings.xml
+          echo "  <servers>" >> ~/.m2/settings.xml
+          echo "    <server>" >> ~/.m2/settings.xml
+          echo "      <id>ossrh</id>" >> ~/.m2/settings.xml
+          echo "      <username>${CENTRAL_USERNAME}</username>" >> ~/.m2/settings.xml
+          echo "      <password>${CENTRAL_PASSWORD}</password>" >> ~/.m2/settings.xml
+          echo "    </server>" >> ~/.m2/settings.xml
+          echo "    <server>" >> ~/.m2/settings.xml
+          echo "      <id>gpg.passphrase</id>" >> ~/.m2/settings.xml
+          echo "      <passphrase>${GPG_PASSPHRASE}</passphrase>" >> ~/.m2/settings.xml
+          echo "    </server>" >> ~/.m2/settings.xml
+          echo "  </servers>" >> ~/.m2/settings.xml
+          echo "</settings>" >> ~/.m2/settings.xml
+
+      - name: Build artifacts and install to local Maven repository
+        run: |
+          # Build modules and install artifacts (including sources + javadoc JARs)
+          # into the local Maven repository. Source and javadoc plugins are configured
+          # in pom.xml and run automatically during the package phase.
+          chmod +x mvnw
+          ./mvnw -B -DskipTests -Dgpg.skip=true clean install
+
+      - name: Verify POM files exist
+        run: |
+          set -euo pipefail
+          MODULES="kafka-sdk-core kafka-sdk-common kafka-sdk-service kafka-sdk-autoconfigure kafka-sdk-starter kafka-sdk"
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout | grep -v "^\[" | tail -n 1)
+          for mod in $MODULES; do
+            pom_path="${HOME}/.m2/repository/org/abhi/$mod/$VERSION/$mod-$VERSION.pom"
+            if [[ ! -f "$pom_path" ]]; then
+              echo "❌ Missing POM: $pom_path"
+              exit 1
+            fi
+          done
+
+      - name: Sign artifacts in local Maven repository with GPG
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          REPO="${HOME}/.m2/repository/org/abhi"
+          if [ ! -d "$REPO" ]; then
+            echo "Local repository path $REPO not found"; ls -la $(dirname "$REPO") || true; exit 1
+          fi
+          # find jars and poms under our groupId path and sign them
+          files=$(find "$REPO" -type f \( -name "*.jar" -o -name "*.pom" \) ) || true
+          if [ -z "$files" ]; then
+            echo "No artifacts found to sign in $REPO"; exit 1
+          fi
+          for f in $files; do
+            echo "Signing $f"
+            # create detached ASCII-armored signatures next to each artifact
+            gpg --batch --yes --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --detach-sign -a "$f"
+          done
+
+      - name: Publish GPG public key
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import --yes
+          KEY_ID=$(gpg --list-keys --with-colons | awk -F: '$1=="pub"{print $5}' | head -n1)
+          if [ -z "$KEY_ID" ]; then
+            echo "❌ Unable to determine GPG key ID"
+            exit 1
+          fi
+          echo "Publishing public key $KEY_ID to keyservers..."
+          # Export the public key
+          gpg --export -a "$KEY_ID" > /tmp/gpg-public-key.asc
+          # Upload to keyserver.ubuntu.com (HKP protocol uses 'keytext' form field)
+          curl -s --request POST "https://keyserver.ubuntu.com/pks/add" \
+            --data-urlencode "keytext@/tmp/gpg-public-key.asc" || echo "Warning: ubuntu keyserver upload failed"
+          # Upload to keys.openpgp.org
+          curl -s --request POST "https://keys.openpgp.org/vks/v1/upload" \
+            -F "keytext@/tmp/gpg-public-key.asc" || echo "Warning: openpgp.org upload failed"
+          # Also try HKP send via gpg directly
+          gpg --keyserver hkps://keyserver.ubuntu.com --send-keys "$KEY_ID" || echo "Warning: gpg --send-keys failed"
+          gpg --keyserver hkps://keys.openpgp.org --send-keys "$KEY_ID" || echo "Warning: gpg --send-keys openpgp failed"
+          # Allow time for key propagation
+          sleep 10
+          echo "✅ Public key upload attempted to multiple keyservers"
+
+      - name: Generate checksum files
+        run: |
+          set -euo pipefail
+          REPO="${HOME}/.m2/repository/org/abhi"
+          find "$REPO" -type f \( -name "*.jar" -o -name "*.pom" -o -name "*.asc" \) | while read -r f; do
+            md5sum "$f" | awk '{print $1}' > "${f}.md5"
+            sha1sum "$f" | awk '{print $1}' > "${f}.sha1"
+            echo "✔ Checksums for $f"
+          done
+
+      - name: Assemble deployment bundle from local Maven repository
+        run: |
+          set -euo pipefail
+          rm -rf central-bundle.zip bundle || true
+
+          # Extract project version from pom.xml
+          VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout | grep -v "^\[" | tail -n 1)
+          echo "Assembling bundle for version: $VERSION"
+
+          mkdir -p bundle/org/abhi
+
+          # Copy only the directories of the specific version being released
+          for module in kafka-sdk-core kafka-sdk-common kafka-sdk-service kafka-sdk-autoconfigure kafka-sdk-starter kafka-sdk; do
+            src_dir="$HOME/.m2/repository/org/abhi/$module/$VERSION"
+            if [ -d "$src_dir" ]; then
+              echo "Copying $module version $VERSION"
+              mkdir -p "bundle/org/abhi/$module"
+              cp -R "$src_dir" "bundle/org/abhi/$module/"
+            else
+              echo "Warning: Directory $src_dir not found!"
+            fi
+          done
+
+          # Remove internal Maven metadata files and lock files
+          find bundle -type f \( -name "_remote.repositories" -o -name "maven-metadata-local.xml" -o -name "*.lastUpdated" -o -name "*.resolver" \) -delete || true
+
+          # create zip with the correct directory structure at the root of the archive
+          cd bundle
+          zip -r ../central-bundle.zip org
+          cd ..
+
+      - name: Upload bundle to Sonatype Central Publisher (AUTOMATIC)
+        id: upload_bundle
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          CENTRAL_API_TOKEN: ${{ secrets.CENTRAL_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          # compute base64 user token
+          token=$(printf "%s:%s" "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 -w0)
+          echo "Uploading bundle (trying Bearer auth with base64 user token)..."
+          resp=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $token" -F "bundle=@central-bundle.zip;type=application/octet-stream" "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC") || true
+          http=$(printf "%s" "$resp" | tail -n1)
+          body=$(printf "%s" "$resp" | sed '$d')
+          echo "HTTP status: $http"
+          echo "Body: $body"
+          if [ "$http" = "201" ] || [ "$http" = "200" ]; then
+            export DEPLOYMENT_ID=$(printf "%s" "$body" | tr -d '\r' | tail -n1)
+            echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_ENV
+            echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$http" = "403" ] || [ "$http" = "401" ]; then
+            echo "Upload returned $http. Trying fallback with Bearer CENTRAL_API_TOKEN..."
+            if [ -n "${CENTRAL_API_TOKEN:-}" ]; then
+              resp2=$(curl -s -w "\n%{http_code}" -H "Authorization: Bearer $CENTRAL_API_TOKEN" -F "bundle=@central-bundle.zip;type=application/octet-stream" "https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC") || true
+              http2=$(printf "%s" "$resp2" | tail -n1)
+              body2=$(printf "%s" "$resp2" | sed '$d')
+              echo "HTTP status: $http2"
+              echo "Body: $body2"
+              if [ "$http2" = "201" ] || [ "$http2" = "200" ]; then
+                export DEPLOYMENT_ID=$(printf "%s" "$body2" | tr -d '\r' | tail -n1)
+                echo "DEPLOYMENT_ID=$DEPLOYMENT_ID" >> $GITHUB_ENV
+                echo "deployment_id=$DEPLOYMENT_ID" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
+              echo "Bearer attempt failed (HTTP $http2)."
+            else
+              echo "No CENTRAL_API_TOKEN secret set; cannot try Bearer token fallback."
+            fi
+            echo "Upload failed with $http. Common causes: invalid credentials, wrong secret type, or account not authorized for the groupId."
+            exit 1
+          fi
+          echo "Upload failed (HTTP $http). Body: $body"; exit 1
+
+      - name: Poll deployment status until published
+        env:
+          CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }}
+          CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }}
+          CENTRAL_API_TOKEN: ${{ secrets.CENTRAL_API_TOKEN }}
+          DEPLOYMENT_ID: ${{ steps.upload_bundle.outputs.deployment_id }}
+        run: |
+          set -euo pipefail
+          # compute base64 user token
+          if [ -n "$CENTRAL_USERNAME" ] && [ -n "$CENTRAL_PASSWORD" ]; then
+            token=$(printf "%s:%s" "$CENTRAL_USERNAME" "$CENTRAL_PASSWORD" | base64 -w0)
+          else
+            token=""
+          fi
+          id="$DEPLOYMENT_ID"
+          echo "Polling deployment id: $id"
+          attempts=0
+          max=120
+          sleep_seconds=15
+          # Treat 5xx as transient server-side issues; retry with backoff
+          while [ $attempts -lt $max ]; do
+            attempts=$((attempts+1))
+            echo "Attempt $attempts"
+            if [ -n "$token" ]; then
+              auth_header="Authorization: Bearer $token"
+            elif [ -n "$CENTRAL_API_TOKEN" ]; then
+              auth_header="Authorization: Bearer $CENTRAL_API_TOKEN"
+            else
+              echo "No credentials available for status check"; exit 1
+            fi
+            out=$(curl -s -w "\n%{http_code}" -X POST -H "$auth_header" "https://central.sonatype.com/api/v1/publisher/status?id=$id") || true
+            http=$(printf "%s" "$out" | tail -n1)
+            body=$(printf "%s" "$out" | sed '$d')
+            echo "HTTP status: $http"
+            echo "Body: $body"
+            if [ "$http" = "200" ]; then
+              state=$(printf "%s" "$body" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("deploymentState",""))') || true
+              echo "State: $state"
+              if [ "$state" = "PUBLISHED" ]; then
+                echo "Deployment published successfully"; exit 0
+              fi
+              if [ "$state" = "FAILED" ]; then
+                echo "Deployment failed"; printf "%s" "$body" | python3 -c 'import sys,json; print(json.load(sys.stdin).get("errors",""))' || true; exit 1
+              fi
+            elif [ "$http" = "500" ]; then
+              echo "Sonatype returned 500 (server error). This is likely transient; retrying after backoff..."
+              # exponential-ish backoff (capped)
+              if [ $sleep_seconds -lt 120 ]; then sleep_seconds=$((sleep_seconds*2)); fi
+            elif [ "$http" = "401" ] || [ "$http" = "403" ]; then
+              echo "Authentication/authorization error (HTTP $http). Please verify CENTRAL_USERNAME/CENTRAL_PASSWORD and that the account is authorized for the groupId."; exit 1
+            else
+              echo "Unexpected HTTP status: $http; treating as retryable (will sleep and retry)."
+            fi
+            echo "Sleeping $sleep_seconds seconds before next attempt..."
+            sleep $sleep_seconds
+          done
+          echo "Timed out waiting for publish after $attempts attempts"; exit 1
