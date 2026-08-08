@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.abhi</groupId>
+    <groupId>io.github.abhiramrathod</groupId>
     <artifactId>kafka-sdk</artifactId>
     <version>1.0.5</version>
     <packaging>pom</packaging>
@@ -82,27 +82,27 @@
                 <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>org.abhi</groupId>
+                <groupId>io.github.abhiramrathod</groupId>
                 <artifactId>kafka-sdk-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.abhi</groupId>
+                <groupId>io.github.abhiramrathod</groupId>
                 <artifactId>kafka-sdk-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.abhi</groupId>
+                <groupId>io.github.abhiramrathod</groupId>
                 <artifactId>kafka-sdk-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.abhi</groupId>
+                <groupId>io.github.abhiramrathod</groupId>
                 <artifactId>kafka-sdk-autoconfigure</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.abhi</groupId>
+                <groupId>io.github.abhiramrathod</groupId>
                 <artifactId>kafka-sdk-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>

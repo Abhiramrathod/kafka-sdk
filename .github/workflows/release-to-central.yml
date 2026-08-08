@@ -110,7 +110,7 @@ jobs:
           MODULES="kafka-sdk-core kafka-sdk-common kafka-sdk-service kafka-sdk-autoconfigure kafka-sdk-starter kafka-sdk"
           VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout | grep -v "^\[" | tail -n 1)
           for mod in $MODULES; do
-            pom_path="${HOME}/.m2/repository/org/abhi/$mod/$VERSION/$mod-$VERSION.pom"
+            pom_path="${HOME}/.m2/repository/io/github/abhiramrathod/$mod/$VERSION/$mod-$VERSION.pom"
             if [[ ! -f "$pom_path" ]]; then
               echo "❌ Missing POM: $pom_path"
               exit 1
@@ -122,7 +122,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
-          REPO="${HOME}/.m2/repository/org/abhi"
+          REPO="${HOME}/.m2/repository/io/github/abhiramrathod"
           if [ ! -d "$REPO" ]; then
             echo "Local repository path $REPO not found"; ls -la $(dirname "$REPO") || true; exit 1
           fi
@@ -167,7 +167,7 @@ jobs:
       - name: Generate checksum files
         run: |
           set -euo pipefail
-          REPO="${HOME}/.m2/repository/org/abhi"
+          REPO="${HOME}/.m2/repository/io/github/abhiramrathod"
           find "$REPO" -type f \( -name "*.jar" -o -name "*.pom" -o -name "*.asc" \) | while read -r f; do
             md5sum "$f" | awk '{print $1}' > "${f}.md5"
             sha1sum "$f" | awk '{print $1}' > "${f}.sha1"
@@ -183,15 +183,15 @@ jobs:
           VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout | grep -v "^\[" | tail -n 1)
           echo "Assembling bundle for version: $VERSION"
 
-          mkdir -p bundle/org/abhi
+          mkdir -p bundle/io/github/abhiramrathod
 
           # Copy only the directories of the specific version being released
           for module in kafka-sdk-core kafka-sdk-common kafka-sdk-service kafka-sdk-autoconfigure kafka-sdk-starter kafka-sdk; do
-            src_dir="$HOME/.m2/repository/org/abhi/$module/$VERSION"
+            src_dir="$HOME/.m2/repository/io/github/abhiramrathod/$module/$VERSION"
             if [ -d "$src_dir" ]; then
               echo "Copying $module version $VERSION"
-              mkdir -p "bundle/org/abhi/$module"
-              cp -R "$src_dir" "bundle/org/abhi/$module/"
+              mkdir -p "bundle/io/github/abhiramrathod/$module"
+              cp -R "$src_dir" "bundle/io/github/abhiramrathod/$module/"
             else
               echo "Warning: Directory $src_dir not found!"
             fi
@@ -202,7 +202,7 @@ jobs:
 
           # create zip with the correct directory structure at the root of the archive
           cd bundle
-          zip -r ../central-bundle.zip org
+          zip -r ../central-bundle.zip io
           cd ..
 
       - name: Upload bundle to Sonatype Central Publisher (AUTOMATIC)

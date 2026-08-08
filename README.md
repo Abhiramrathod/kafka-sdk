@@ -3,7 +3,7 @@
 A lightweight Spring Boot SDK that simplifies publishing messages to Apache Kafka. It wraps Spring Cloud Stream's `StreamBridge` behind a clean, interface-driven API — so you define topics as Java interfaces and publish messages with a single method call.
 
 [![Build & Release](https://github.com/Abhiramrathod/kafka-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/Abhiramrathod/kafka-sdk/actions/workflows/ci.yml)
-[![](https://jitpack.io/v/Abhiramrathod/kafka-sdk.svg)](https://jitpack.io/#Abhiramrathod/kafka-sdk)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.abhiramrathod/kafka-sdk-starter.svg)](https://central.sonatype.com/artifact/io.github.abhiramrathod/kafka-sdk-starter)
 
 ## Why Kafka SDK?
 
@@ -36,36 +36,25 @@ Publishing to Kafka with Spring Cloud Stream requires wiring `StreamBridge`, man
 
 ### Maven
 
-Add the JitPack repository and the dependency to your `pom.xml`:
+Add the dependency to your `pom.xml` (available on Maven Central):
 
 ```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
 <dependency>
-    <groupId>com.github.Abhiramrathod</groupId>
+    <groupId>io.github.abhiramrathod</groupId>
     <artifactId>kafka-sdk-starter</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.5</version>
 </dependency>
 ```
 
 ### Gradle
 
 ```groovy
-repositories {
-    maven { url 'https://jitpack.io' }
-}
-
 dependencies {
-    implementation 'com.github.Abhiramrathod:kafka-sdk-starter:1.0.1'
+    implementation 'io.github.abhiramrathod:kafka-sdk-starter:1.0.5'
 }
 ```
 
-Check [jitpack.io/#Abhiramrathod/kafka-sdk](https://jitpack.io/#Abhiramrathod/kafka-sdk) for available versions.
+Check [Maven Central](https://central.sonatype.com/artifact/io.github.abhiramrathod/kafka-sdk-starter) for available versions.
 
 ## Quick Start
 
