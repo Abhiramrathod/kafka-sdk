@@ -14,4 +14,26 @@
     <description>Core interfaces and service contracts for the Kafka SDK.</description>
     <url>https://github.com/Abhiramrathod/kafka-sdk/tree/master/kafka-sdk-core</url>
 
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>abhiram</id>
+            <name>Abhiram</name>
+            <url>https://github.com/abhiram-gh</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/Abhiramrathod/kafka-sdk.git</connection>
+        <developerConnection>scm:git:ssh://github.com:Abhiramrathod/kafka-sdk.git</developerConnection>
+        <url>https://github.com/Abhiramrathod/kafka-sdk/tree/master</url>
+    </scm>
+
 </project>

@@ -10,7 +10,7 @@
 
     <name>kafka-sdk</name>
     <description>A lightweight Spring Boot SDK that simplifies publishing messages to Apache Kafka using an interface-driven API built on Spring Cloud Stream.</description>
-    <url>https://github.com/abhiram-gh/kafka-sdk</url>
+    <url>https://github.com/Abhiramrathod/kafka-sdk</url>
 
     <licenses>
         <license>
