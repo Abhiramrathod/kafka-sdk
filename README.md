@@ -11,6 +11,7 @@ Publishing to Kafka with Spring Cloud Stream requires wiring `StreamBridge`, man
 
 - **Define topics as interfaces** instead of string-based binding names.
 - **Publish with one line** — sync, async, or in batches.
+- **Consume with a plain class** — extend a base consumer to read records, Kafka metadata, and manual acknowledgements.
 - **Auto-configured** — add the starter dependency and it works.
 - **Header management built in** — `messageId`, `timestamp`, `source`, and `contentType` are set automatically.
 
@@ -168,6 +169,83 @@ publishService.publishBatch(OrderCreatedTopic.class, orders);
 // Send in chunks of 10
 publishService.publishBatch(OrderCreatedTopic.class, orders, 10);
 ```
+
+## Consume messages
+
+### 1. Define a consumer
+
+Extend `KafkaTopicConsumer<T>` and implement `accept(Message<T>)`:
+
+```java
+import org.abhi.kafkasdk.consumer.KafkaTopicConsumer;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.Message;
+import org.springframework.stereotype.Component;
+
+@Component
+public class OrderCreatedConsumer extends KafkaTopicConsumer<Order> {
+
+    @Override
+    public void accept(Message<Order> message) {
+        Order order = getPayload(message);
+        String key = getHeaderAsString(message, KafkaHeaders.RECEIVED_MESSAGE_KEY);
+        System.out.println("Order " + order.getId() + " (key: " + key + ")");
+    }
+}
+```
+
+Spring Cloud Stream binds the consumer bean to its input binding. The binding name is derived from the bean name — for `orderCreatedConsumer` it becomes `orderCreatedConsumer-in-0`.
+
+### 2. Configure the binding
+
+```yaml
+spring:
+  cloud:
+    stream:
+      bindings:
+        orderCreatedConsumer-in-0:
+          destination: order-created-topic
+          group: order-service
+```
+
+### Reading Kafka metadata
+
+The base class exposes protected helpers for record metadata, so you never touch raw headers:
+
+| Helper | Returns |
+|--------|---------|
+| `getPayload(message)` | Deserialized payload |
+| `getReceivedTopic(message)` | Topic the record came from |
+| `getReceivedPartition(message)` | Partition id (or `-1` if absent) |
+| `getReceivedKey(message)` | Record key |
+| `getHeaderValue(message, name)` | Raw header value |
+| `getHeaderAsString(message, name)` | Header value as a string |
+
+### Manual acknowledgement
+
+When a consumer group uses manual acknowledgement, call `acknowledge(message)` after the record is fully processed:
+
+```yaml
+spring:
+  cloud:
+    stream:
+      bindings:
+        orderCreatedConsumer-in-0:
+          destination: order-created-topic
+          group: order-service
+          consumer:
+            acknowledgeMode: MANUAL
+```
+
+```java
+@Override
+public void accept(Message<Order> message) {
+    // process order...
+    acknowledge(message);
+}
+```
+
+`acknowledge` is a no-op when the binding does not use manual acknowledgement.
 
 ## Automatic Headers
 
