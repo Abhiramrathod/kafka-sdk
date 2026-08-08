@@ -12,7 +12,7 @@
     <artifactId>kafka-sdk-common</artifactId>
     <name>kafka-sdk-common</name>
     <description>Shared utilities for message conversion, header handling, and channel resolution in the Kafka SDK.</description>
-    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-common</url>
+    <url>https://github.com/Abhiramrathod/kafka-sdk/tree/master/kafka-sdk-common</url>
 
     <dependencies>
         <dependency>
@@ -26,6 +26,11 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-commons</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -29,9 +29,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git://github.com/abhiram-gh/kafka-sdk.git</connection>
-        <developerConnection>scm:git:ssh://github.com:abhiram-gh/kafka-sdk.git</developerConnection>
-        <url>https://github.com/abhiram-gh/kafka-sdk/tree/master</url>
+        <connection>scm:git:git://github.com/Abhiramrathod/kafka-sdk.git</connection>
+        <developerConnection>scm:git:ssh://github.com:Abhiramrathod/kafka-sdk.git</developerConnection>
+        <url>https://github.com/Abhiramrathod/kafka-sdk/tree/master</url>
     </scm>
 
     <modules>
@@ -53,6 +53,7 @@
 
         <owasp.version>10.0.3</owasp.version>
         <checkstyle.version>10.20.1</checkstyle.version>
+        <checkstyle-plugin.version>3.6.0</checkstyle-plugin.version>
         <spotbugs.version>4.8.6.6</spotbugs.version>
         <pmd.version>3.25.0</pmd.version>
         <jayway.version>2.1.0</jayway.version>
@@ -145,7 +146,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-checkstyle-plugin</artifactId>
-                        <version>${checkstyle.version}</version>
+                        <version>${checkstyle-plugin.version}</version>
                         <configuration>
                             <configLocation>config/checkstyle.xml</configLocation>
                             <consoleOutput>true</consoleOutput>
@@ -190,10 +191,7 @@
                         <configuration>
                             <targetJdk>17</targetJdk>
                             <rulesets>
-                                <ruleset>rulesets/java/quickstart.xml</ruleset>
-                                <ruleset>rulesets/java/design.xml</ruleset>
-                                <ruleset>rulesets/java/errorprone.xml</ruleset>
-                                <ruleset>rulesets/java/codestyle.xml</ruleset>
+                                <ruleset>config/pmd-ruleset.xml</ruleset>
                             </rulesets>
                             <failOnViolation>true</failOnViolation>
                             <printFailingErrors>true</printFailingErrors>

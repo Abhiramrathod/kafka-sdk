@@ -46,9 +46,9 @@ Add the JitPack repository and the dependency to your `pom.xml`:
 </repositories>
 
 <dependency>
-    <groupId>com.github.Abdhiramrathod</groupId>
+    <groupId>com.github.Abhiramrathod</groupId>
     <artifactId>kafka-sdk-starter</artifactId>
-    <version>1.0.42</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -60,7 +60,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.Abdhiramrathod:kafka-sdk-starter:1.0.42'
+    implementation 'com.github.Abhiramrathod:kafka-sdk-starter:1.0.1'
 }
 ```
 
@@ -70,11 +70,13 @@ Check [jitpack.io/#Abhiramrathod/kafka-sdk](https://jitpack.io/#Abhiramrathod/ka
 
 ### 1. Define a topic
 
-Create an interface that extends `ITopicPublish`:
+Create an interface that extends `ITopicPublish` and register it as a Spring bean:
 
 ```java
 import org.abhi.kafkasdk.core.ITopicPublish;
+import org.springframework.stereotype.Component;
 
+@Component
 public interface OrderCreatedTopic extends ITopicPublish {
 
     @Override
@@ -88,6 +90,8 @@ public interface OrderCreatedTopic extends ITopicPublish {
     }
 }
 ```
+
+The SDK resolves the topic interface through the Spring context, so it must be a bean (the interface itself, or a `@Configuration` class exposing it via `@Bean`).
 
 ### 2. Publish messages
 

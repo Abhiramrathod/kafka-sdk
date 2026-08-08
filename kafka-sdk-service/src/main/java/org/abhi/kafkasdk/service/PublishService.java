@@ -1,7 +1,7 @@
 package org.abhi.kafkasdk.service;
 
-import jakarta.inject.Inject;
 import org.abhi.kafkasdk.core.ITopicPublish;
+import org.abhi.kafkasdk.core.exception.PublishException;
 import org.abhi.kafkasdk.core.service.IPublishService;
 import org.springframework.cloud.stream.function.StreamBridge;
 import org.springframework.context.ApplicationContext;
@@ -13,18 +13,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 
 import static org.abhi.kafkasdk.common.CommonUtility.getSpringMessageWithHeaders;
 
+/**
+ * Default {@link IPublishService} implementation backed by Spring Cloud Stream's {@link StreamBridge}.
+ */
 public class PublishService implements IPublishService {
 
+    private final ApplicationContext context;
+    private final StreamBridge streamBridge;
+    private final Map<Class<? extends ITopicPublish>, ITopicPublish> topicCache = new ConcurrentHashMap<>();
 
-    @Inject
-    private ApplicationContext applicationContext;
-
-    @Inject
-    private StreamBridge streamBridge;
-
+    public PublishService(ApplicationContext context, StreamBridge streamBridge) {
+        this.context = context;
+        this.streamBridge = streamBridge;
+    }
 
     @Override
     public void publish(Class<? extends ITopicPublish> topicType, Object message) {
@@ -33,41 +39,49 @@ public class PublishService implements IPublishService {
 
     @Override
     public void publish(Class<? extends ITopicPublish> topicType, Object message, Map<String, Object> headers) {
-        ITopicPublish topicPublish = applicationContext.getBean(topicType);
+        final ITopicPublish topicPublish = resolveTopic(topicType);
 
-        String binding = topicPublish.getBinding();
+        final String binding = topicPublish.getBinding();
         if (binding == null || binding.isEmpty()) {
-            throw new IllegalArgumentException("Binding name cannot be null or empty");
+            throw new IllegalArgumentException("Binding name cannot be null or empty for topic: " + topicType.getName());
         }
 
-        Map<String, Object> mergedHeaders = new HashMap<>(topicPublish.getHeaders());
-        mergedHeaders.put(MessageHeaders.CONTENT_TYPE, topicPublish.getContentType());
-        mergedHeaders.put("source", applicationContext.getApplicationName());
-        mergedHeaders.put("messageId", UUID.randomUUID().toString());
-        mergedHeaders.put("timestamp", System.currentTimeMillis());
-        mergedHeaders.putAll(headers);
+        final Map<String, Object> mergedHeaders = buildHeaders(topicPublish, headers);
 
-        Message<?> springMessage = getSpringMessageWithHeaders(message, mergedHeaders);
+        final Message<?> springMessage = getSpringMessageWithHeaders(message, mergedHeaders);
 
-        boolean sent = streamBridge.send(binding, springMessage);
+        final boolean sent = streamBridge.send(binding, springMessage);
         if (!sent) {
-            throw new RuntimeException("Failed to send message to binding: " + binding);
+            throw new PublishException("Failed to send message to binding: " + binding);
         }
     }
 
     @Override
     public CompletableFuture<Void> publishAsync(Class<? extends ITopicPublish> topicType, Object message) {
-        return publishAsync(topicType, message, new HashMap<>());
+        return publishAsync(topicType, message, new HashMap<>(), null);
     }
 
     @Override
     public CompletableFuture<Void> publishAsync(Class<? extends ITopicPublish> topicType, Object message, Map<String, Object> headers) {
-        return CompletableFuture.runAsync(() -> publish(topicType, message, headers));
+        return publishAsync(topicType, message, headers, null);
+    }
+
+    @Override
+    public CompletableFuture<Void> publishAsync(Class<? extends ITopicPublish> topicType, Object message, Executor executor) {
+        return publishAsync(topicType, message, new HashMap<>(), executor);
+    }
+
+    @Override
+    public CompletableFuture<Void> publishAsync(Class<? extends ITopicPublish> topicType, Object message, Map<String, Object> headers, Executor executor) {
+        final Runnable task = () -> publish(topicType, message, headers);
+        return executor != null
+                ? CompletableFuture.runAsync(task, executor)
+                : CompletableFuture.runAsync(task);
     }
 
     @Override
     public void publishBatch(Class<? extends ITopicPublish> topicType, List<?> messages) {
-        publishBatch(topicType, messages, messages.size());
+        publishBatch(topicType, messages, messages == null ? 0 : messages.size());
     }
 
     @Override
@@ -79,8 +93,27 @@ public class PublishService implements IPublishService {
             throw new IllegalArgumentException("Batch size must be greater than 0");
         }
         for (int i = 0; i < messages.size(); i += batchSize) {
-            List<?> chunk = messages.subList(i, Math.min(i + batchSize, messages.size()));
+            final List<?> chunk = messages.subList(i, Math.min(i + batchSize, messages.size()));
             publish(topicType, chunk);
         }
+    }
+
+    private ITopicPublish resolveTopic(Class<? extends ITopicPublish> topicType) {
+        if (topicType == null) {
+            throw new IllegalArgumentException("Topic type cannot be null");
+        }
+        return topicCache.computeIfAbsent(topicType, context::getBean);
+    }
+
+    private Map<String, Object> buildHeaders(ITopicPublish topicPublish, Map<String, Object> headers) {
+        final Map<String, Object> mergedHeaders = new HashMap<>(topicPublish.getHeaders());
+        mergedHeaders.put(MessageHeaders.CONTENT_TYPE, topicPublish.getContentType());
+        mergedHeaders.put("source", context.getApplicationName());
+        mergedHeaders.put("messageId", UUID.randomUUID().toString());
+        mergedHeaders.put("timestamp", System.currentTimeMillis());
+        if (headers != null) {
+            mergedHeaders.putAll(headers);
+        }
+        return mergedHeaders;
     }
 }

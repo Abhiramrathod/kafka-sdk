@@ -35,15 +35,13 @@
         <module name="IllegalCatch"/>
 
         <!-- SOLID - Interface Segregation -->
-        <module name="InterfaceIsPermitted"/>
+        <module name="InterfaceIsType"/>
 
         <!-- Design -->
         <module name="FinalClass"/>
         <module name="HideUtilityClassConstructor">
             <property name="severity" value="warning"/>
         </module>
-        <module name="ImmutableEnumCheck"/>
-        <module name="UtilityClass"/>
         <module name="VisibilityModifier">
             <property name="packageAllowed" value="true"/>
             <property name="protectedAllowed" value="true"/>

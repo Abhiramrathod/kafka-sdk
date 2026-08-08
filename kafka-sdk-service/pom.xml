@@ -12,7 +12,7 @@
     <artifactId>kafka-sdk-service</artifactId>
     <name>kafka-sdk-service</name>
     <description>PublishService implementation using Spring Cloud Stream's StreamBridge for Kafka message publishing.</description>
-    <url>https://github.com/abhiram-gh/kafka-sdk/tree/master/kafka-sdk-service</url>
+    <url>https://github.com/Abhiramrathod/kafka-sdk/tree/master/kafka-sdk-service</url>
 
     <dependencies>
         <dependency>
@@ -28,9 +28,9 @@
             <artifactId>spring-cloud-stream</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.inject</groupId>
-            <artifactId>jakarta.inject-api</artifactId>
-            <version>2.0.1</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -6,58 +6,67 @@ import org.springframework.integration.channel.AbstractMessageChannel;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHeaders;
-import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.messaging.support.GenericMessage;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-
-public class CommonUtility {
+/**
+ * Shared utilities for message conversion, header handling, and channel resolution.
+ */
+public final class CommonUtility {
 
     private CommonUtility() {
     }
 
     public static <V> String convertMessagePayloadToString(V value) {
+        final String result;
         if (value instanceof byte[] payloadBytes) {
-            return new String(payloadBytes);
+            result = new String(payloadBytes);
         } else {
-            return String.valueOf(value);
+            result = String.valueOf(value);
         }
+        return result;
     }
 
     public static Map<String, String> convertMessageHeadersToString(MessageHeaders headers) {
-        Map<String, String> headersMap = new ConcurrentHashMap<>();
+        final Map<String, String> headersMap = new ConcurrentHashMap<>();
         headers.forEach((key, value) -> headersMap.put(key, String.valueOf(value)));
         return headersMap;
     }
 
     public static Optional<String> getChannelName(MessageChannel channel) {
+        final Optional<String> channelName;
         if (channel instanceof AbstractMessageChannel amc) {
-            String channelName = amc.getFullChannelName();
-            if (StringUtils.isNotEmpty(channelName)) {
-                int index = channelName.indexOf(46);
+            String name = amc.getFullChannelName();
+            if (StringUtils.isNotEmpty(name)) {
+                final int index = name.lastIndexOf('.');
                 if (index >= 0) {
-                    channelName = channelName.substring(index + 1);
+                    name = name.substring(index + 1);
                 }
-                return Optional.of(channelName);
+                channelName = Optional.of(name);
+            } else {
+                channelName = Optional.empty();
             }
+        } else {
+            channelName = Optional.empty();
         }
-        return Optional.empty();
+        return channelName;
     }
 
     public static Optional<String> getTopicName(BindingProperties bindingProperties) {
+        final Optional<String> topicName;
         if (bindingProperties != null && bindingProperties.getDestination() != null) {
-            return Optional.of(bindingProperties.getDestination());
+            topicName = Optional.of(bindingProperties.getDestination());
+        } else {
+            topicName = Optional.empty();
         }
-        return Optional.empty();
+        return topicName;
     }
 
     public static Message<?> getSpringMessageWithHeaders(Object message, Map<String, Object> headers) {
-        MessageBuilder<?> messageBuilder = MessageBuilder.withPayload(message);
-        if (headers != null) {
-            headers.forEach(messageBuilder::setHeader);
-        }
-        return messageBuilder.build();
+        final Map<String, Object> resolvedHeaders = headers == null ? Map.of() : headers;
+        return new GenericMessage<>(message, new MessageHeaders(resolvedHeaders));
     }
 }
