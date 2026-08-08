@@ -174,7 +174,9 @@ publishService.publishBatch(OrderCreatedTopic.class, orders, 10);
 
 ### 1. Define a consumer
 
-Extend `KafkaTopicConsumer<T>` and implement `accept(Message<T>)`:
+`KafkaTopicConsumer<T>` is a functional interface extending `java.util.function.Consumer<Message<T>>`, so it works with a class **or** a lambda.
+
+**Class-based:**
 
 ```java
 import org.abhi.kafkasdk.consumer.KafkaTopicConsumer;
@@ -183,13 +185,33 @@ import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
 @Component
-public class OrderCreatedConsumer extends KafkaTopicConsumer<Order> {
+public class OrderCreatedConsumer implements KafkaTopicConsumer<Order> {
 
     @Override
     public void accept(Message<Order> message) {
         Order order = getPayload(message);
-        String key = getHeaderAsString(message, KafkaHeaders.RECEIVED_MESSAGE_KEY);
+        String key = getHeaderAsString(message, KafkaHeaders.RECEIVED_KEY);
         System.out.println("Order " + order.getId() + " (key: " + key + ")");
+    }
+}
+```
+
+**Lambda-based** (use the `Message` API directly — default helpers are only available on class-based consumers):
+
+```java
+import org.abhi.kafkasdk.consumer.KafkaTopicConsumer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class ConsumerConfig {
+
+    @Bean
+    KafkaTopicConsumer<Order> orderCreatedConsumer() {
+        return message -> {
+            Order order = message.getPayload();
+            System.out.println("Order " + order.getId());
+        };
     }
 }
 ```

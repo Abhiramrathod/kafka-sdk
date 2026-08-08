@@ -8,6 +8,7 @@ import org.springframework.messaging.MessageHeaders;
 import org.springframework.messaging.support.GenericMessage;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -49,7 +50,19 @@ class KafkaTopicConsumerTest {
         assertNull(consumer.acknowledgment);
     }
 
-    static class RecordingConsumer extends KafkaTopicConsumer<String> {
+    @Test
+    void worksAsJavaConsumerFunctionalInterface() {
+        Message<String> message = new GenericMessage<>("hello", new MessageHeaders(Map.of()));
+
+        AtomicReference<String> captured = new AtomicReference<>();
+        KafkaTopicConsumer<String> consumer = msg -> captured.set(msg.getPayload());
+
+        consumer.accept(message);
+
+        assertEquals("hello", captured.get());
+    }
+
+    static class RecordingConsumer implements KafkaTopicConsumer<String> {
 
         String payload;
         String key;

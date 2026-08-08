@@ -7,24 +7,17 @@ import org.springframework.messaging.Message;
 import java.util.function.Consumer;
 
 /**
- * Base class for consuming messages from a Kafka topic through Spring Cloud Stream's
- * functional programming model.
+ * Functional interface for consuming messages from a Kafka topic through Spring Cloud Stream's
+ * functional programming model. It extends {@link Consumer} and can be implemented with a class
+ * or a lambda.
  * <p>
- * Extend this class, implement {@link #accept(Message)}, and register it as a Spring bean.
- * Spring Cloud Stream binds the bean to its input binding (e.g. {@code orderCreated-in-0}),
- * matching the binding declared by the function bean name.
+ * Register it as a Spring bean; Spring Cloud Stream binds the bean to its input binding
+ * (e.g. {@code orderCreatedConsumer-in-0}), matching the binding declared by the bean name.
  *
  * @param <T> payload type of the consumed message
  */
-public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
-
-    /**
-     * Handles a single consumed message.
-     *
-     * @param message received message, never {@code null}
-     */
-    @Override
-    public abstract void accept(Message<T> message);
+@FunctionalInterface
+public interface KafkaTopicConsumer<T> extends Consumer<Message<T>> {
 
     /**
      * Extracts the deserialized payload from the received message.
@@ -32,7 +25,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      * @param message received message
      * @return payload of the message
      */
-    protected final T getPayload(Message<T> message) {
+    default T getPayload(Message<T> message) {
         return message.getPayload();
     }
 
@@ -43,7 +36,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      * @param name    header name
      * @return header value as a string, or {@code null} when absent
      */
-    protected final String getHeaderAsString(Message<T> message, String name) {
+    default String getHeaderAsString(Message<T> message, String name) {
         final Object value = getHeaderValue(message, name);
         return value != null ? String.valueOf(value) : null;
     }
@@ -55,7 +48,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      * @param name    header name
      * @return header value, or {@code null} when absent
      */
-    protected final Object getHeaderValue(Message<T> message, String name) {
+    default Object getHeaderValue(Message<T> message, String name) {
         return message.getHeaders().get(name);
     }
 
@@ -65,7 +58,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      * @param message received message
      * @return record key, or {@code null} when absent
      */
-    protected final Object getReceivedKey(Message<T> message) {
+    default Object getReceivedKey(Message<T> message) {
         return getHeaderValue(message, KafkaHeaders.RECEIVED_KEY);
     }
 
@@ -75,7 +68,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      * @param message received message
      * @return topic name, or {@code null} when absent
      */
-    protected final String getReceivedTopic(Message<T> message) {
+    default String getReceivedTopic(Message<T> message) {
         return getHeaderAsString(message, KafkaHeaders.RECEIVED_TOPIC);
     }
 
@@ -85,7 +78,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      * @param message received message
      * @return partition id, or {@code -1} when absent
      */
-    protected final int getReceivedPartition(Message<T> message) {
+    default int getReceivedPartition(Message<T> message) {
         final Object value = getHeaderValue(message, KafkaHeaders.RECEIVED_PARTITION);
         return value instanceof Number number ? number.intValue() : -1;
     }
@@ -98,7 +91,7 @@ public abstract class KafkaTopicConsumer<T> implements Consumer<Message<T>> {
      *
      * @param message received message
      */
-    protected final void acknowledge(Message<T> message) {
+    default void acknowledge(Message<T> message) {
         final Acknowledgment acknowledgment = getAcknowledgement(message);
         if (acknowledgment != null) {
             acknowledgment.acknowledge();
